@@ -75,7 +75,7 @@ function is_admin() {
 
 if ( isset( $_POST['name'] ) && isset( $_POST['task'] ) ) {
 	$name = htmlspecialchars( strip_tags( $_POST['name'] ) );
-	$task = htmlspecialchars( trim( $_POST['task'] ) );
+	$task = addslashes( htmlspecialchars( trim( $_POST['task'] ) ) );
 	$sql = "INSERT INTO `{$db_table_tasks}` (`name`, `content`) VALUES ('{$name}', '{$task}');";
 	$link->query( $sql );
 	$link->close();
@@ -202,12 +202,14 @@ if ( isset( $_GET['admin_exit'] ) ) {
     for (let i = 0; i < task.length; i++) {
         let current = task[i];
         // remove task
-        task[i].querySelector('.js-task__remove').onclick = () => {
-            let isRemove = confirm('Are you sure to delete the task?');
+        if( task[i].querySelector('.js-task__remove') ) {
+            task[i].querySelector('.js-task__remove').onclick = () => {
+                let isRemove = confirm('Are you sure to delete the task?');
 
-            if (isRemove)
-                document.location = "/?remove_task=" + current.id
-        };
+                if (isRemove)
+                    document.location = "/?remove_task=" + current.id
+            };
+        }
         // edit tast
         if( task[i].querySelector('.js-task__edit') ) {
             task[i].querySelector('.js-task__edit').onclick = () => {

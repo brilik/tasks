@@ -91,6 +91,8 @@ if ( isset( $_POST['login'] ) && isset( $_POST['password'] ) ) {
 	if ( authentification( $login, $password ) ) {
 		setcookie( 'auth', $login, time() + 3600 );
 	}
+	header( 'Location: /' );
+	exit;
 }
 if ( isset( $_GET['remove_task'] ) ) {
 	remove_task( $_GET['remove_task'] );
@@ -144,7 +146,7 @@ if ( isset( $_GET['admin_exit'] ) ) {
 		    <?php foreach ( $tasks as $task ): ?>
                 <article class="task" id="<?= $task['id']; ?>">
                     <div><span>Name:</span> <?= $task['name']; ?></div>
-                    <div>
+                    <div class="task-content">
                         <?php if( isset($_GET['edit_task']) && $_GET['edit_task'] === $task['id'] ): ?>
                             <form action="/" method="post">
                                 <p>
@@ -187,6 +189,7 @@ if ( isset( $_GET['admin_exit'] ) ) {
     .btn-edit:hover { background-color: aqua }
     /* block answer with tasks */
     .task { border: 1px solid dimgrey; height: 150px; width: 300px; padding: 10px 7px; margin: 20px auto; position: relative; }
+    .task-content { height: 90%; overflow: scroll; overflow-x: hidden; }
     .answer { display: flex; flex-flow: wrap; }
     .answer > article .answer-actions { position: absolute; top: 10px; right: 10px; }
     .answer > article .task-created { position: absolute; top: -10px; text-align: center; padding: 0; width: 100% }

@@ -14,9 +14,17 @@ $db_base = 'test_task';
 $db_table_tasks = 'tasks';
 $db_table_users = 'users';
 $link = mysqli_connect( $db_host, $db_user, $db_password, $db_base );
-function get_tasks() {
-	global $link, $db_base, $db_table_tasks;
-	$sql = "SELECT * FROM {$db_base}.{$db_table_tasks}";
+$postsOnPage = 3;
+
+function get_tasks( bool $pagination = false ) {
+	global $link, $db_base, $db_table_tasks, $postsOnPage;
+	if ( $pagination === false ) {
+		$startPost = (int) ( isset( $_GET['page'] ) && $_GET['page'] > 0 ) ? $_GET['page'] * $postsOnPage : 0;
+		$startPost = $startPost - $postsOnPage;
+		$sql = "SELECT * FROM {$db_base}.{$db_table_tasks} LIMIT {$startPost}, {$postsOnPage}";
+	} else {
+		$sql = "SELECT * FROM {$db_base}.{$db_table_tasks}";
+	}
 	$res = [];
 	if ( $result = $link->query( $sql ) ) {
 		while ( $row = $result->fetch_assoc() ) {
@@ -24,7 +32,7 @@ function get_tasks() {
 		}
 	}
 
-	return array_reverse($res);
+	return array_reverse( $res );
 }
 
 function remove_task( int $id ) {
@@ -71,6 +79,33 @@ function is_admin() {
 	}
 
 	return false;
+}
+
+function the_pagination( int $countPosts = 1 ) {
+	if ( $countPosts === 1 ) {
+		return;
+	}
+	global $postsOnPage;
+	$pageCurrent = empty( $_GET['page'] ) ? 1 : intval( $_GET['page'] );
+	$pageLast    = (int) ceil( $countPosts / $postsOnPage );
+	for ( $i = (int) 1; $i <= $pageLast; $i ++ ) {
+	    // prev page
+		if ( $i === 1 && $pageCurrent !== 1 ) {
+		    $pagePrev = $pageCurrent - 1;
+			echo "<a href=\"?page={$pagePrev}\"> < </a>";
+		}
+		// current page
+		if ( $pageCurrent === $i ) {
+			echo "<span class=\"active\">{$i}</span>";
+		} else {
+			echo "<a href=\"?page={$i}\"> {$i} </a>";
+		}
+		// next page
+		if ( $i === $pageLast && $pageCurrent !== $pageLast ) {
+			$pageNext = $pageCurrent + 1;
+			echo "<a href=\"?page={$pageNext}\"> > </a>";
+		}
+	}
 }
 
 if ( isset( $_POST['name'] ) && isset( $_POST['task'] ) ) {
@@ -126,7 +161,7 @@ if ( isset( $_GET['admin_exit'] ) ) {
         <div class="auth">
         <span>Authorization:</span>
         <form action="/" method="post">
-            <input type="text" name="login" placeholder="Enter login" value="<?= htmlspecialchars(strip_tags($_POST['login'])); ?>" required>
+            <input type="text" name="login" placeholder="Enter login" value="<?= htmlspecialchars(strip_tags($_POST['login'])); ?>" autocomplete="off" required>
             <input type="password" name="password" placeholder="Enter password">
             <button type="submit" class="btn">Login</button>
         </form>
@@ -141,9 +176,9 @@ if ( isset( $_GET['admin_exit'] ) ) {
             <p><input type="submit" value="Add"></p>
         </form>
     </div>
-    <?php if ( $tasks = get_tasks() ): ?>
+    <?php if ( $tasks = get_tasks(true) ): ?>
         <div class="answer">
-		    <?php foreach ( $tasks as $task ): ?>
+		    <?php foreach ( get_tasks() as $task ): ?>
                 <article class="task" id="<?= $task['id']; ?>">
                     <div><span>Name:</span> <?= $task['name']; ?></div>
                     <div class="task-content">
@@ -177,6 +212,7 @@ if ( isset( $_GET['admin_exit'] ) ) {
                 </article>
 		    <?php endforeach; ?>
         </div>
+        <div class="nav nav-page"><?php the_pagination(count($tasks)); ?></div>
     <?php endif; ?>
 </main>
 <style>
@@ -189,7 +225,7 @@ if ( isset( $_GET['admin_exit'] ) ) {
     .btn-edit:hover { background-color: aqua }
     /* block answer with tasks */
     .task { border: 1px solid dimgrey; height: 150px; width: 300px; padding: 10px 7px; margin: 20px auto; position: relative; }
-    .task-content { height: 90%; overflow: scroll; overflow-x: hidden; }
+    .task-content { height: 90%; overflow: auto; overflow-x: hidden; }
     .answer { display: flex; flex-flow: wrap; }
     .answer > article .answer-actions { position: absolute; top: 10px; right: 10px; }
     .answer > article .task-created { position: absolute; top: -10px; text-align: center; padding: 0; width: 100% }

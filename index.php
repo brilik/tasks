@@ -90,19 +90,23 @@ function the_pagination( int $countPosts = 1 ) {
 	for ( $i = (int) 1; $i <= $pageLast; $i ++ ) {
 	    // prev page
 		if ( $i === 1 && $pageCurrent !== 1 ) {
-		    $pagePrev = $pageCurrent - 1;
-			echo "<a href=\"?page={$pagePrev}\"> < </a>";
+			$_GET['page'] = $pageCurrent - 1;
+			$link = http_build_query($_GET);
+			echo "<a href=\"?{$link}\"> < </a>";
 		}
 		// current page
 		if ( $pageCurrent === $i ) {
 			echo "<span class=\"active\">{$i}</span>";
 		} else {
-			echo "<a href=\"?page={$i}\"> {$i} </a>";
+		    $_GET['page'] = $i;
+		    $link = http_build_query($_GET);
+			echo "<a href=\"?{$link}\"> {$i} </a>";
 		}
 		// next page
 		if ( $i === $pageLast && $pageCurrent !== $pageLast ) {
-			$pageNext = $pageCurrent + 1;
-			echo "<a href=\"?page={$pageNext}\"> > </a>";
+			$_GET['page'] = $pageCurrent + 1;
+			$link = http_build_query($_GET);
+			echo "<a href=\"?{$link}\"> > </a>";
 		}
 	}
 }

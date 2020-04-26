@@ -19,8 +19,7 @@ $postsOnPage = 3;
 function get_tasks( bool $pagination = false ) {
 	global $link, $db_base, $db_table_tasks, $postsOnPage;
 	if ( $pagination === false ) {
-		$startPost = (int) ( isset( $_GET['page'] ) && $_GET['page'] > 0 ) ? $_GET['page'] * $postsOnPage : 0;
-		$startPost = $startPost - $postsOnPage;
+		$startPost = (int) ( isset( $_GET['page'] ) && $_GET['page'] > 0 ) ? $_GET['page'] * $postsOnPage - $postsOnPage : 0;
 		$sql = "SELECT * FROM {$db_base}.{$db_table_tasks} LIMIT {$startPost}, {$postsOnPage}";
 	} else {
 		$sql = "SELECT * FROM {$db_base}.{$db_table_tasks}";

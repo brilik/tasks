@@ -20,8 +20,9 @@ function get_tasks( bool $pagination = false ) {
 	global $link, $db_base, $db_table_tasks, $postsOnPage;
 	if ( $pagination === false ) {
 		$startPost = (int) ( isset( $_GET['page'] ) && $_GET['page'] > 0 ) ? $_GET['page'] * $postsOnPage - $postsOnPage : 0;
-		$sql = "SELECT * FROM {$db_base}.{$db_table_tasks} LIMIT {$startPost}, {$postsOnPage}";
-	} else {
+		$sort = ( isset( $_GET['sort'] ) ) ? " ORDER BY `{$_GET['sort']}` " : ' ';
+        $sql = "SELECT * FROM {$db_base}.{$db_table_tasks}{$sort}LIMIT {$startPost}, {$postsOnPage}";
+    } else {
 		$sql = "SELECT * FROM {$db_base}.{$db_table_tasks}";
 	}
 	$res = [];
@@ -31,7 +32,7 @@ function get_tasks( bool $pagination = false ) {
 		}
 	}
 
-	return array_reverse( $res );
+    return $res;
 }
 
 function remove_task( int $id ) {
@@ -111,6 +112,30 @@ function the_pagination( int $countPosts = 1 ) {
 	}
 }
 
+function get_sorting() {
+	$res   = [];
+	$sort  = [
+		'name'   => 'Sort by name',
+		'email'  => 'Sort by email',
+		'status' => 'Sort by status',
+	];
+	$_get = $_GET;
+
+	$res[] = '<select name="sort" onchange="if (this.value) window.location.href = this.value">>';
+	foreach ( $sort as $key => $item ) {
+		$selected = '';
+		if( isset($_GET['sort']) && ! empty( $_GET['sort'] && $_GET['sort'] === $key ) ){
+			$selected = ' selected';
+		}
+		$_get['sort'] = $key;
+		$link = http_build_query($_get);
+        array_push( $res, "<option{$selected} value=\"?{$link}\">{$item}</option>" );
+	}
+	$res[] = '</select>';
+
+	return implode( $res );
+}
+
 if ( isset( $_POST['name'] ) && isset( $_POST['task'] ) ) {
 	$name = htmlspecialchars( strip_tags( $_POST['name'] ) );
 	$task = addslashes( htmlspecialchars( trim( $_POST['task'] ) ) );
@@ -180,9 +205,10 @@ if ( isset( $_GET['admin_exit'] ) ) {
         </form>
     </div>
     <?php if ( $tasks = get_tasks(true) ): ?>
+        <div class="sorting"><?= get_sorting(); ?></div>
         <div class="answer">
 		    <?php foreach ( get_tasks() as $task ): ?>
-                <article class="task" id="<?= $task['id']; ?>">
+                <article class="task<?= $task['status'] ? ' complete' : '' ?>" data-status="<?= $task['status']; ?>" id="<?= $task['id']; ?>">
                     <div><span>Name:</span> <?= $task['name']; ?></div>
                     <div class="task-content">
                         <?php if( isset($_GET['edit_task']) && $_GET['edit_task'] === $task['id'] ): ?>
@@ -206,12 +232,12 @@ if ( isset( $_GET['admin_exit'] ) ) {
 	                        <?= date('H:i d.M.y', strtotime($task['date'])); ?>
                         </div>
                     </div>
-                    <div class="answer-actions">
-                        <?php if( is_admin() ): ?>
+	                <?php if( is_admin() ): ?>
+                        <div class="answer-actions">
                             <button class="btn btn-edit js-task__edit">Edit</button>
                             <button class="btn btn-close js-task__remove">Х</button>
-                        <?php endif; ?>
-                    </div>
+                        </div>
+	                <?php endif; ?>
                 </article>
 		    <?php endforeach; ?>
         </div>
@@ -227,12 +253,13 @@ if ( isset( $_GET['admin_exit'] ) ) {
     .btn-edit { background-color: aquamarine }
     .btn-edit:hover { background-color: aqua }
     /* block answer with tasks */
-    .task { border: 1px solid dimgrey; height: 150px; width: 300px; padding: 10px 7px; margin: 20px auto; position: relative; }
+    .task { border: 2px solid dimgrey; height: 150px; width: 300px; padding: 10px 7px; margin: 20px auto; position: relative; }
+    .complete { border: 2px solid green; background-color: lightgreen; }
     .task-content { height: 90%; overflow: auto; overflow-x: hidden; }
     .answer { display: flex; flex-flow: wrap; }
     .answer > article .answer-actions { position: absolute; top: 10px; right: 10px; }
     .answer > article .task-created { position: absolute; top: -10px; text-align: center; padding: 0; width: 100% }
-    .answer > article .task-created__bg { background: white; width: 40%; margin: 0 auto; }
+    .answer > article .task-created__bg { background: white; width: 40%; margin: 0 auto; border-radius: 7px; }
     /* authorization */
     .auth { width: 350px; padding: 7px; }
     .auth form { display: flex; flex-wrap: wrap; justify-content: flex-end; }

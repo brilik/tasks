@@ -42,10 +42,19 @@ function remove_task( int $id ) {
 	$link->close();
 }
 
-function update_task( int $id, string $content ) {
+function update_task($_post) {
 	global $link, $db_table_tasks;
-	$content = htmlspecialchars( $content );
-	$sql = "UPDATE `{$db_table_tasks}` SET `content` = '{$content}' WHERE `{$db_table_tasks}`.`id` = {$id};";
+	$id      = (int) $_post['task_id'];
+	$status  = (bool) ( isset($_post['status']) ) ? 1 : 0;
+	$name    = (string) $_post['name'];
+	$email   = (string) $_post['email'];
+	$content = (string) htmlspecialchars($_post['task']);
+	$sql     = "UPDATE `{$db_table_tasks}` 
+                SET `content` = '{$content}',
+                    `status`  = {$status},
+                    `name`    = '{$name}',
+                    `email`   = '{$email}'
+                WHERE `{$db_table_tasks}`.`id` = {$id};";
 	$link->query( $sql );
 	$link->close();
 	header( "Location: /" );
@@ -136,7 +145,7 @@ function get_sorting() {
 	return implode( $res );
 }
 
-if ( isset( $_POST['name'] ) && isset( $_POST['task'] ) ) {
+if ( isset( $_POST['add_task'] ) ) {
 	$name = htmlspecialchars( strip_tags( $_POST['name'] ) );
 	$task = addslashes( htmlspecialchars( trim( $_POST['task'] ) ) );
 	$sql = "INSERT INTO `{$db_table_tasks}` (`name`, `content`) VALUES ('{$name}', '{$task}');";
@@ -145,10 +154,10 @@ if ( isset( $_POST['name'] ) && isset( $_POST['task'] ) ) {
 	header( "Location: /" );
 	exit;
 }
-if ( isset( $_POST['task_id'] ) && isset( $_POST['task'] ) ) {
-	update_task( $_POST['task_id'], $_POST['task'] );
+if ( isset( $_POST['edit_ok'] ) ) {
+	update_task($_POST);
 }
-if ( isset( $_POST['login'] ) && isset( $_POST['password'] ) ) {
+if ( isset( $_POST['auth'] ) ) {
 	$login    = htmlspecialchars( strip_tags( $_POST['login'] ) );
 	$password = htmlspecialchars( strip_tags( $_POST['password'] ) );
 	if ( authentification( $login, $password ) ) {
@@ -192,6 +201,7 @@ if ( isset( $_GET['admin_exit'] ) ) {
             <input type="text" name="login" placeholder="Enter login" value="<?= htmlspecialchars(strip_tags($_POST['login'])); ?>" autocomplete="off" required>
             <input type="password" name="password" placeholder="Enter password">
             <button type="submit" class="btn">Login</button>
+            <input type="hidden" name="auth" value="1">
         </form>
     </div>
     <?php endif; ?>
@@ -200,8 +210,10 @@ if ( isset( $_GET['admin_exit'] ) ) {
     <div class="task-add">
         <form action="/" method="POST">
             <p><input type="text" name="name" placeholder="Enter name" minlength=3 required></p>
+            <p><input type="email" name="email" placeholder="Enter email"></p>
             <p><textarea name="task" cols="30" rows="10" placeholder="Enter task" minlength=15 required></textarea></p>
             <p><input type="submit" value="Add"></p>
+            <input type="hidden" name="add_task" value="1">
         </form>
     </div>
     <?php if ( $tasks = get_tasks(true) ): ?>
@@ -209,24 +221,39 @@ if ( isset( $_GET['admin_exit'] ) ) {
         <div class="answer">
 		    <?php foreach ( get_tasks() as $task ): ?>
                 <article class="task<?= $task['status'] ? ' complete' : '' ?>" data-status="<?= $task['status']; ?>" id="<?= $task['id']; ?>">
-                    <div><span>Name:</span> <?= $task['name']; ?></div>
-                    <div class="task-content">
-                        <?php if( isset($_GET['edit_task']) && $_GET['edit_task'] === $task['id'] ): ?>
+	                <?php if( isset($_GET['edit_task']) && $_GET['edit_task'] === $task['id'] ): ?>
+                        <div class="task-content">
                             <form action="/" method="post">
+                                <label for="edit-task__name">Name:</label>
+                                <input id="edit-task__name" type="text" name="name" value="<?= $task['name']; ?>" minlength=3 required>
+                                <br>
+                                <label for="edit-task__email">eMail:</label>
+                                <input id="edit-task__email" type="email" name="email" value="<?= $task['email']; ?>">
                                 <p>
-                                    <span>Task:</span>
-                                    <textarea name="task" class="js-edit-content" cols="40" rows="5"><?= $task['content']; ?></textarea>
+                                    <label for="edit-task__content">Task:</label>
+                                    <textarea id="edit-task__content" name="task" class="js-edit-content" cols="40" rows="10"><?= $task['content']; ?></textarea>
                                 </p>
                                 <div class="btn-edit-task">
                                     <input type="hidden" name="task_id" value="<?= $_GET['edit_task']; ?>">
+                                    <input type="hidden" name="edit_ok" value="1">
                                     <button type="submit" class="btn js-edit-ok">OK</button>
                                     <button class="btn js-edit-cancel">Cancel</button>
+                                    <div class="edit-task__status-wrap">
+                                        <label for="edit-task__status">Status task</label>
+                                        <input id="edit-task__status" type="checkbox" name="status"<?= $task['status'] == 1 ? ' checked' : ''; ?>>
+                                    </div>
                                 </div>
                             </form>
-                        <?php else: ?>
-                            <p><span>Task:</span> <?= $task['content']; ?></p>
-                        <?php endif; ?>
-                    </div>
+                        </div>
+                    <?php else: ?>
+                        <div><b>Name:&nbsp;</b><span><?= $task['name']; ?></span></div>
+                        <div><b>eMail:&nbsp;</b><span><?= $task['email']; ?></span></div>
+                        <div class="task-content">
+                            <p>
+                                <span><b>Task:</b>&nbsp;</span><?= $task['content']; ?>
+                            </p>
+                        </div>
+	                <?php endif; ?>
                     <div class="task-created">
                         <div class="task-created__bg">
 	                        <?= date('H:i d.M.y', strtotime($task['date'])); ?>
@@ -252,10 +279,14 @@ if ( isset( $_GET['admin_exit'] ) ) {
     .btn-close:hover { background-color: darkred}
     .btn-edit { background-color: aquamarine }
     .btn-edit:hover { background-color: aqua }
+    .btn-edit-task { position: absolute; display: flex; bottom: 10px; flex-direction: column; }
+    .btn-edit-task label { background-color: white; padding: 0 5px }
     /* block answer with tasks */
-    .task { border: 2px solid dimgrey; height: 150px; width: 300px; padding: 10px 7px; margin: 20px auto; position: relative; }
+    .task { border: 2px solid dimgrey; height: 300px; width: 300px; padding: 10px 7px; margin: 20px auto; position: relative; }
     .complete { border: 2px solid green; background-color: lightgreen; }
     .task-content { height: 90%; overflow: auto; overflow-x: hidden; }
+    .task-content p { margin-bottom: 10px; }
+    .edit-task__status-wrap { background: white; margin: 0 auto; border-radius: 7px; width: 100%; text-transform: uppercase; }
     .answer { display: flex; flex-flow: wrap; }
     .answer > article .answer-actions { position: absolute; top: 10px; right: 10px; }
     .answer > article .task-created { position: absolute; top: -10px; text-align: center; padding: 0; width: 100% }
@@ -275,20 +306,26 @@ if ( isset( $_GET['admin_exit'] ) ) {
             task[i].querySelector('.js-task__remove').onclick = () => {
                 let isRemove = confirm('Are you sure to delete the task?');
 
-                if (isRemove)
-                    document.location = "/?remove_task=" + current.id
+                if (isRemove && document.location.search.length)
+                    document.location = "/" + document.location.search + "&remove_task=" + current.id
+                else if( isRemove )
+                    document.location = "/" + "?remove_task=" + current.id
             };
         }
         // edit tast
         if( task[i].querySelector('.js-task__edit') ) {
             task[i].querySelector('.js-task__edit').onclick = () => {
-                document.location = "/?edit_task=" + current.id
+                if( document.location.search.length ) {
+                    document.location = "/" + document.location.search + "&edit_task=" + current.id
+                } else {
+                    document.location = "/" + "?edit_task=" + current.id
+                }
             };
         }
         // cancel edit task
         if( task[i].querySelector('.js-edit-cancel') ){
             task[i].querySelector('.js-edit-cancel').onclick = () => {
-                document.location = "/"
+                document.location = "/" + document.location.search
             };
         }
     }

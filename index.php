@@ -90,35 +90,41 @@ function is_admin() {
 	return false;
 }
 
-function the_pagination( int $countPosts = 1 ) {
+function get_pagination( int $countPosts = 1 ) {
 	if ( $countPosts === 1 ) {
 		return;
 	}
 	global $postsOnPage;
 	$pageCurrent = empty( $_GET['page'] ) ? 1 : intval( $_GET['page'] );
 	$pageLast    = (int) ceil( $countPosts / $postsOnPage );
+	$res = [];
+	if($countPosts <= $postsOnPage){
+	    return false;
+    }
 	for ( $i = (int) 1; $i <= $pageLast; $i ++ ) {
 	    // prev page
 		if ( $i === 1 && $pageCurrent !== 1 ) {
 			$_GET['page'] = $pageCurrent - 1;
 			$link = http_build_query($_GET);
-			echo "<a href=\"?{$link}\"> < </a>";
+			array_push($res, "<a href=\"?{$link}\"> < </a>");
 		}
 		// current page
 		if ( $pageCurrent === $i ) {
-			echo "<span class=\"active\">{$i}</span>";
+			array_push($res, "<span class=\"active\">{$i}</span>");
 		} else {
 		    $_GET['page'] = $i;
 		    $link = http_build_query($_GET);
-			echo "<a href=\"?{$link}\"> {$i} </a>";
+			array_push($res, "<a href=\"?{$link}\"> {$i} </a>");
 		}
 		// next page
 		if ( $i === $pageLast && $pageCurrent !== $pageLast ) {
 			$_GET['page'] = $pageCurrent + 1;
 			$link = http_build_query($_GET);
-			echo "<a href=\"?{$link}\"> > </a>";
+			array_push($res, "<a href=\"?{$link}\"> > </a>");
 		}
 	}
+
+	return implode($res);
 }
 
 function get_sorting() {
@@ -268,7 +274,7 @@ if ( isset( $_GET['admin_exit'] ) ) {
                 </article>
 		    <?php endforeach; ?>
         </div>
-        <div class="nav nav-page"><?php the_pagination(count($tasks)); ?></div>
+        <div class="nav nav-page"><?= get_pagination(count($tasks)); ?></div>
     <?php endif; ?>
 </main>
 <style>

@@ -35,6 +35,16 @@ function get_tasks( bool $pagination = false ) {
     return $res;
 }
 
+function add_task($_post) {
+    global $db_table_tasks, $link;
+	$name = htmlspecialchars( strip_tags( $_post['name'] ) );
+	$task = addslashes( htmlspecialchars( trim( $_post['task'] ) ) );
+	$email = $_post['email'];
+	$sql = "INSERT INTO `{$db_table_tasks}` (`name`, `content`, `email`) VALUES ('{$name}', '{$task}', '{$email}');";
+	$link->query( $sql );
+	$link->close();
+}
+
 function remove_task( int $id ) {
 	global $link, $db_table_tasks;
 	$sql = "DELETE FROM `{$db_table_tasks}` WHERE `{$db_table_tasks}`.`id` = {$id}";
@@ -152,11 +162,7 @@ function get_sorting() {
 }
 
 if ( isset( $_POST['add_task'] ) ) {
-	$name = htmlspecialchars( strip_tags( $_POST['name'] ) );
-	$task = addslashes( htmlspecialchars( trim( $_POST['task'] ) ) );
-	$sql = "INSERT INTO `{$db_table_tasks}` (`name`, `content`) VALUES ('{$name}', '{$task}');";
-	$link->query( $sql );
-	$link->close();
+	add_task($_POST);
 	header( "Location: /" );
 	exit;
 }

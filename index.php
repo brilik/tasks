@@ -58,7 +58,7 @@ function update_task($_post) {
 	$status  = (bool) ( isset($_post['status']) ) ? 1 : 0;
 	$name    = (string) $_post['name'];
 	$email   = (string) $_post['email'];
-	$content = (string) htmlspecialchars($_post['task']);
+	$content = (string) addslashes(htmlspecialchars($_post['task']));
 	$sql     = "UPDATE `{$db_table_tasks}` 
                 SET `content` = '{$content}',
                     `status`  = {$status},
